@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Аудит задач: куда уходит время на маркетплейсе</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A2433;
+    --slate:#5B6B7F;
+    --slate-light:#8C9AAC;
+    --bg:#F6FAFD;
+    --card:#FFFFFF;
+    --line:#E1EAF2;
+    --blue:#2F6FED;
+    --blue-soft:#EAF1FD;
+    --coral:#FF6B4A;
+    --coral-soft:#FFEDE8;
+    --green:#1FA774;
+    --green-soft:#E9F8F1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Jost',sans-serif;
+    line-height:1.55;
+  }
+  h1,h2,h3,.eyebrow{font-family:'Unbounded',sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:48px 24px 120px;}
+
+  header{margin-bottom:48px;}
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--blue);
+    font-weight:600;
+    margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(28px,5vw,40px);
+    font-weight:800;
+    line-height:1.15;
+    margin:0 0 16px;
+    letter-spacing:-.01em;
+  }
+  .lead{
+    font-size:17px;
+    color:var(--slate);
+    max-width:58ch;
+  }
+
+  .gauge{
+    position:sticky;
+    top:0;
+    z-index:10;
+    background:rgba(246,250,253,.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    margin:0 -24px 40px;
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .gauge-label{font-size:12px;color:var(--slate);white-space:nowrap;}
+  .gauge-track{
+    flex:1;
+    height:8px;
+    background:var(--line);
+    border-radius:99px;
+    overflow:hidden;
+  }
+  .gauge-fill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,var(--blue),var(--coral));
+    border-radius:99px;
+    transition:width .4s ease;
+  }
+  .gauge-num{
+    font-family:'Unbounded',sans-serif;
+    font-weight:800;
+    font-size:18px;
+    white-space:nowrap;
+    min-width:96px;
+    text-align:right;
+  }
+
+  section.block{margin-bottom:40px;}
+  .block-head{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+    margin-bottom:18px;
+  }
+  .block-num{
+    font-family:'Unbounded',sans-serif;
+    font-weight:800;
+    font-size:13px;
+    color:var(--blue);
+    background:var(--blue-soft);
+    padding:4px 10px;
+    border-radius:6px;
+  }
+  .block-head h2{
+    font-size:20px;
+    font-weight:600;
+    margin:0;
+  }
+  .block-sub{color:var(--slate-light);font-size:14px;margin:0 0 18px 0;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:14px;
+  }
+  .row{
+    display:grid;
+    grid-template-columns:1fr 90px;
+    gap:14px;
+    align-items:center;
+  }
+  .row input[type="text"]{
+    font-family:'Jost',sans-serif;
+    font-size:15px;
+    border:none;
+    background:transparent;
+    color:var(--ink);
+    padding:6px 0;
+    width:100%;
+  }
+  .row input[type="text"]::placeholder{color:var(--slate-light);}
+  .row input[type="text"]:focus{outline:none;}
+  .hours-input{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 10px;
+  }
+  .hours-input input{
+    width:36px;
+    border:none;
+    text-align:center;
+    font-family:'Jost',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    background:transparent;
+  }
+  .hours-input input:focus{outline:none;}
+  .hours-input span{font-size:12px;color:var(--slate-light);}
+
+  .options{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .opt{
+    flex:1;
+    min-width:140px;
+    position:relative;
+  }
+  .opt input{position:absolute;opacity:0;}
+  .opt label{
+    display:block;
+    text-align:center;
+    font-size:13px;
+    padding:10px 8px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    color:var(--slate);
+    cursor:pointer;
+    transition:.15s;
+  }
+  .opt input:checked + label{
+    border-color:transparent;
+  }
+  .opt:nth-child(1) input:checked + label{background:var(--green-soft);color:var(--green);font-weight:600;}
+  .opt:nth-child(2) input:checked + label{background:var(--blue-soft);color:var(--blue);font-weight:600;}
+  .opt:nth-child(3) input:checked + label{background:var(--coral-soft);color:var(--coral);font-weight:600;}
+
+  .add-row{
+    background:none;
+    border:1px dashed var(--line);
+    color:var(--slate);
+    border-radius:10px;
+    padding:10px;
+    width:100%;
+    font-family:'Jost',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .add-row:hover{border-color:var(--blue);color:var(--blue);}
+
+  textarea{
+    width:100%;
+    min-height:90px;
+    font-family:'Jost',sans-serif;
+    font-size:15px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+    resize:vertical;
+    color:var(--ink);
+  }
+  textarea:focus{outline:none;border-color:var(--blue);}
+  textarea::placeholder{color:var(--slate-light);}
+
+  .goal-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;}
+  .goal-num{
+    font-family:'Unbounded',sans-serif;
+    font-weight:800;
+    color:var(--coral);
+    font-size:20px;
+    line-height:1.4;
+  }
+
+  .summary-card{
+    background:var(--ink);
+    color:#fff;
+    border-radius:16px;
+    padding:28px 24px;
+    margin-top:8px;
+  }
+  .summary-card h2{color:#fff;font-size:19px;margin:0 0 6px;}
+  .summary-card .block-sub{color:#A9B6C6;}
+  .summary-stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin:18px 0 22px;
+  }
+  .stat{
+    background:rgba(255,255,255,.06);
+    border-radius:10px;
+    padding:14px;
+  }
+  .stat .num{font-family:'Unbounded',sans-serif;font-weight:800;font-size:24px;}
+  .stat .lbl{font-size:12px;color:#A9B6C6;margin-top:4px;}
+
+  .print-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--blue);
+    color:#fff;
+    border:none;
+    padding:12px 20px;
+    border-radius:10px;
+    font-family:'Jost',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    margin-top:8px;
+  }
+  .print-btn:hover{background:#255FD1;}
+
+  footer{
+    margin-top:56px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    color:var(--slate-light);
+    font-size:13px;
+  }
+
+  @media print{
+    .gauge{position:static;}
+    .add-row,.print-btn{display:none;}
+    body{background:#fff;}
+  }
+
+  @media (max-width:480px){
+    .wrap{padding:32px 16px 100px;}
+    .row{grid-template-columns:1fr 80px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="gauge">
+  <span class="gauge-label">Занято в неделю</span>
+  <div class="gauge-track"><div class="gauge-fill" id="gaugeFill"></div></div>
+  <span class="gauge-num" id="gaugeNum">0 ч / нед</span>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Перед интенсивом</div>
+    <h1>Куда уходит твоё время на маркетплейсе</h1>
+    <p class="lead">Заполни честно — это не для оценки, а чтобы на интенсиве «Claude + ИИ-агенты для маркетплейсов» ты закрыл(а) именно свои задачи, а не общие темы. 15 минут сейчас экономят часы на курсе.</p>
+  </header>
+
+  <!-- БЛОК 1 -->
+  <section class="block" data-block>
+    <div class="block-head">
+      <span class="block-num">01</span>
+      <h2>Карточки товаров</h2>
+    </div>
+    <p class="block-sub">Описания, ключевые слова, инфографика, анализ конкурентов</p>
+
+    <div class="card" data-tasklist>
+      <div class="row task-row">
+        <input type="text" placeholder="Например: писать описания карточек">
+        <div class="hours-input"><input type="number" min="0" max="80" class="hrs" value="0"><span>ч</span></div>
+      </div>
+      <div class="options">
+        <div class="opt"><input type="radio" name="d1-0" id="d1-0a"><label for="d1-0a">Делегирую ИИ</label></div>
+        <div class="opt"><input type="radio" name="d1-0" id="d1-0b"><label for="d1-0b">Частично</label></div>
+        <div class="opt"><input type="radio" name="d1-0" id="d1-0c"><label for="d1-0c">Только сам</label></div>
+      </div>
+    </div>
+
+    <button class="add-row" data-add="1">+ добавить задачу</button>
+  </section>
+
+  <!-- БЛОК 2 -->
+  <section class="block" data-block>
+    <div class="block-head">
+      <span class="block-num">02</span>
+      <h2>Аналитика и отчётность</h2>
+    </div>
+    <p class="block-sub">Выгрузки, юнит-экономика, ДРР, остатки, цены конкурентов</p>
+
+    <div class="card" data-tasklist>
+      <div class="row task-row">
+        <input type="text" placeholder="Например: собирать отчёт по остаткам">
+        <div class="hours-input"><input type="number" min="0" max="80" class="hrs" value="0"><span>ч</span></div>
+      </div>
+      <div class="options">
+        <div class="opt"><input type="radio" name="d2-0" id="d2-0a"><label for="d2-0a">Делегирую ИИ</label></div>
+        <div class="opt"><input type="radio" name="d2-0" id="d2-0b"><label for="d2-0b">Частично</label></div>
+        <div class="opt"><input type="radio" name="d2-0" id="d2-0c"><label for="d2-0c">Только сам</label></div>
+      </div>
+    </div>
+
+    <button class="add-row" data-add="2">+ добавить задачу</button>
+  </section>
+
+  <!-- БЛОК 3 -->
+  <section class="block" data-block>
+    <div class="block-head">
+      <span class="block-num">03</span>
+      <h2>Реклама и продвижение</h2>
+    </div>
+    <p class="block-sub">Настройка кампаний, ставки, анализ эффективности</p>
+
+    <div class="card" data-tasklist>
+      <div class="row task-row">
+        <input type="text" placeholder="Например: корректировать ставки в РК">
+        <div class="hours-input"><input type="number" min="0" max="80" class="hrs" value="0"><span>ч</span></div>
+      </div>
+      <div class="options">
+        <div class="opt"><input type="radio" name="d3-0" id="d3-0a"><label for="d3-0a">Делегирую ИИ</label></div>
+        <div class="opt"><input type="radio" name="d3-0" id="d3-0b"><label for="d3-0b">Частично</label></div>
+        <div class="opt"><input type="radio" name="d3-0" id="d3-0c"><label for="d3-0c">Только сам</label></div>
+      </div>
+    </div>
+
+    <button class="add-row" data-add="3">+ добавить задачу</button>
+  </section>
+
+  <!-- БЛОК 4 -->
+  <section class="block" data-block>
+    <div class="block-head">
+      <span class="block-num">04</span>
+      <h2>Коммуникация</h2>
+    </div>
+    <p class="block-sub">Отзывы, вопросы покупателей, переписка с поставщиками и командой</p>
+
+    <div class="card" data-tasklist>
+      <div class="row task-row">
+        <input type="text" placeholder="Например: отвечать на отзывы">
+        <div class="hours-input"><input type="number" min="0" max="80" class="hrs" value="0"><span>ч</span></div>
+      </div>
+      <div class="options">
+        <div class="opt"><input type="radio" name="d4-0" id="d4-0a"><label for="d4-0a">Делегирую ИИ</label></div>
+        <div class="opt"><input type="radio" name="d4-0" id="d4-0b"><label for="d4-0b">Частично</label></div>
+        <div class="opt"><input type="radio" name="d4-0" id="d4-0c"><label for="d4-0c">Только сам</label></div>
+      </div>
+    </div>
+
+    <button class="add-row" data-add="4">+ добавить задачу</button>
+  </section>
+
+  <!-- БЛОК 5 -->
+  <section class="block" data-block>
+    <div class="block-head">
+      <span class="block-num">05</span>
+      <h2>Стратегия и планирование</h2>
+    </div>
+    <p class="block-sub">Закупки, ценообразование, новые категории</p>
+
+    <div class="card" data-tasklist>
+      <div class="row task-row">
+        <input type="text" placeholder="Например: планировать закупку на сезон">
+        <div class="hours-input"><input type="number" min="0" max="80" class="hrs" value="0"><span>ч</span></div>
+      </div>
+      <div class="options">
+        <div class="opt"><input type="radio" name="d5-0" id="d5-0a"><label for="d5-0a">Делегирую ИИ</label></div>
+        <div class="opt"><input type="radio" name="d5-0" id="d5-0b"><label for="d5-0b">Частично</label></div>
+        <div class="opt"><input type="radio" name="d5-0" id="d5-0c"><label for="d5-0c">Только сам</label></div>
+      </div>
+    </div>
+
+    <button class="add-row" data-add="5">+ добавить задачу</button>
+  </section>
+
+  <!-- ИТОГ -->
+  <section class="block">
+    <div class="block-head">
+      <span class="block-num">06</span>
+      <h2>Топ-3 цели на интенсив</h2>
+    </div>
+    <p class="block-sub">Какие из отмеченных задач хочешь закрыть с помощью ИИ в первую очередь</p>
+
+    <div class="goal-row">
+      <span class="goal-num">1</span>
+      <textarea placeholder="Цель 1: например — настроить автоответы на отзывы"></textarea>
+    </div>
+    <div class="goal-row">
+      <span class="goal-num">2</span>
+      <textarea placeholder="Цель 2"></textarea>
+    </div>
+    <div class="goal-row">
+      <span class="goal-num">3</span>
+      <textarea placeholder="Цель 3"></textarea>
+    </div>
+  </section>
+
+  <div class="summary-card">
+    <h2>Твоя картина</h2>
+    <p class="block-sub">Обновляется автоматически по мере заполнения</p>
+    <div class="summary-stats">
+      <div class="stat"><div class="num" id="sTotal">0 ч</div><div class="lbl">всего занято в неделю</div></div>
+      <div class="stat"><div class="num" id="sDeleg">0 ч</div><div class="lbl">можно отдать ИИ</div></div>
+    </div>
+    <button class="print-btn" onclick="window.print()">Сохранить / распечатать</button>
+  </div>
+
+  <footer>
+    Заполни перед интенсивом «Claude + ИИ-агенты для маркетплейсов» — 7–8 июля. Это твоя точка отсчёта.
+  </footer>
+
+</div>
+
+<script>
+let counter = 1;
+
+function rowTemplate(blockId, idx){
+  const div = document.createElement('div');
+  div.className = 'card task-row-wrap';
+  div.innerHTML = `
+    <div class="row task-row">
+      <input type="text" placeholder="Задача">
+      <div class="hours-input"><input type="number" min="0" max="80" class="hrs" value="0"><span>ч</span></div>
+    </div>
+    <div class="options">
+      <div class="opt"><input type="radio" name="d${blockId}-${idx}" id="d${blockId}-${idx}a"><label for="d${blockId}-${idx}a">Делегирую ИИ</label></div>
+      <div class="opt"><input type="radio" name="d${blockId}-${idx}" id="d${blockId}-${idx}b"><label for="d${blockId}-${idx}b">Частично</label></div>
+      <div class="opt"><input type="radio" name="d${blockId}-${idx}" id="d${blockId}-${idx}c"><label for="d${blockId}-${idx}c">Только сам</label></div>
+    </div>
+  `;
+  return div;
+}
+
+document.querySelectorAll('[data-add]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const blockId = btn.getAttribute('data-add');
+    const section = btn.closest('section');
+    const idx = section.querySelectorAll('.task-row').length;
+    const node = rowTemplate(blockId, idx);
+    btn.parentNode.insertBefore(node, btn);
+    attachListeners(node);
+    recalc();
+  });
+});
+
+function attachListeners(scope){
+  scope.querySelectorAll('.hrs').forEach(inp=>{
+    inp.addEventListener('input', recalc);
+  });
+  scope.querySelectorAll('input[type="radio"]').forEach(r=>{
+    r.addEventListener('change', recalc);
+  });
+}
+
+function recalc(){
+  let total = 0;
+  let deleg = 0;
+  document.querySelectorAll('.task-row-wrap, .card[data-tasklist]').forEach(card=>{
+    const hrsInput = card.querySelector('.hrs');
+    const h = hrsInput ? parseFloat(hrsInput.value) || 0 : 0;
+    total += h;
+    const checked = card.querySelector('input[type="radio"]:checked');
+    if(checked){
+      const label = card.querySelector(`label[for="${checked.id}"]`).textContent.trim();
+      if(label === 'Делегирую ИИ') deleg += h;
+      else if(label === 'Частично') deleg += h * 0.5;
+    }
+  });
+  document.getElementById('sTotal').textContent = total + ' ч';
+  document.getElementById('sDeleg').textContent = Math.round(deleg*10)/10 + ' ч';
+  document.getElementById('gaugeNum').textContent = total + ' ч / нед';
+  const pct = Math.min(100, (total/60)*100);
+  document.getElementById('gaugeFill').style.width = pct + '%';
+}
+
+attachListeners(document);
+recalc();
+</script>
+
+</body>
+</html>
